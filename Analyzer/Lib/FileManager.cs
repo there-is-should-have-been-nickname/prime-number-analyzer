@@ -19,9 +19,14 @@ namespace Lib
                 {
                     string Line = sr.ReadLine();
                     while (Line != null)
-                    {   
-                        int Number = Convert.ToInt32(Line);
-                        Result.Add(Number);
+                    {
+                        int ParsedNum = 0;
+                        bool IsParse = int.TryParse(Line, out ParsedNum);
+                        if (IsParse)
+                        {
+                            Result.Add(ParsedNum);
+                        }
+
                         Line = sr.ReadLine();
                     }
 
