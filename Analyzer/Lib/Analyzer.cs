@@ -8,7 +8,7 @@ namespace Lib
 {
     static class Analyzer
     {
-        private static bool IsPrime(int number)
+        public static bool IsPrime(int number)
         {
             for (int i = 2; i <= Math.Sqrt(number); ++i)
             {
