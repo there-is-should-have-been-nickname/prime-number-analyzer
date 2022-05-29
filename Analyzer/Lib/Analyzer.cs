@@ -21,7 +21,7 @@ namespace Lib
             return true;
         }
 
-        public static int FindFirstPrime(List<int> Numbers)
+        public static int? FindFirstPrime(List<int> Numbers)
         {
             foreach (var Num in Numbers)
             {
@@ -30,7 +30,7 @@ namespace Lib
                     return Num;
                 }
             }
-            return -1;
+            return null;
         }
     }
 }

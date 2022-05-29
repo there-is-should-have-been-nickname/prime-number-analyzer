@@ -12,9 +12,14 @@ namespace Lib
     public static class AppWorker
     {
         public static int Index = 0;
+        public static bool IsFinish = false;
         public static Mutex mutexObj = new();
         public static List<int> Numbers = new List<int>();
-        public static bool IsFinish = false;
+
+        public readonly static string ReportStart = "Time test #";
+        public readonly static string FailResult = "There is no prime number";
+        public readonly static string SuccessResult = "The first prime number is ";
+
         private static void ShowHelp()
         {
             Console.WriteLine("'help' для вызова помощи");
@@ -42,16 +47,9 @@ namespace Lib
                 TimeWatcher.Start();
                 var PrimeNumber = Analyzer.FindFirstPrime(Numbers);
                 TimeWatcher.Stop();
-                if (PrimeNumber == -1)
-                {
-                    Console.WriteLine("There is no prime number");
-                }
-                else
-                {
-                    Console.WriteLine("The first prime number is " + PrimeNumber);
-                }
 
-                Console.WriteLine("Time test #" + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
+                Console.WriteLine((PrimeNumber == null) ? FailResult : SuccessResult + PrimeNumber);
+                Console.WriteLine(ReportStart + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
             }
         }
 
@@ -84,7 +82,7 @@ namespace Lib
                     var isPrime = Analyzer.IsPrime(Number);
                     if (isPrime)
                     {
-                        FinishThread("The first prime number is " + Number);
+                        FinishThread(SuccessResult + Number);
                         return;
                     }
                     ++Index;
@@ -92,7 +90,7 @@ namespace Lib
                 }
                 else
                 {
-                    FinishThread("There is no prime number");
+                    FinishThread(FailResult);
                     return;
                 }
             }
@@ -101,30 +99,42 @@ namespace Lib
 
         private static void ExactMultithreadTests(int threadNumber, int number)
         {
-            var TimeWatcher = new Stopwatch();
             for (int i = 0; i < number; ++i)
             {
-                TimeWatcher.Start();
+                Index = 0;
+                IsFinish = false;
 
-                for (int j = 0; j < threadNumber; ++j)
+                List<Thread> threads = new List<Thread>();
+
+                Stopwatch TimeWatcher = new Stopwatch();
+
+                for (int j = 0; j < threadNumber; j++)
                 {
                     var thread = new Thread(new ParameterizedThreadStart(CheckArray));
                     thread.Name = (j + 1).ToString();
-                    thread.Start();
+                    threads.Add(thread);
+
                 }
 
-                
-                TimeWatcher.Stop();
-                
+                TimeWatcher.Start();
+                threads.ForEach(T => T.Start());
 
-                Console.WriteLine("Time test #" + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
+                foreach (Thread thread in threads)
+                {
+                    if (thread.IsAlive)
+                    {
+                        thread.Join();
+                    }
+                }
+                TimeWatcher.Stop();
+                Console.WriteLine(ReportStart + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
             }
         }
 
         public static void Start()
         {
 
-            Numbers = FileManager.ReadFile("numbers10.txt");
+            Numbers = FileManager.ReadFile("numbers1000.txt");
             ShowHelp();
             Console.WriteLine();
 
@@ -146,15 +156,8 @@ namespace Lib
                     var ThreadNumber = Params[0];
                     var TestNumber = Params[1];
 
-                    Index = 0;
-                    IsFinish = false;
+                    
                     ExactMultithreadTests(ThreadNumber, TestNumber);
-                    //for (int i = 0; i < ThreadNumber; ++i)
-                    //{
-                    //    var thread = new Thread(new ParameterizedThreadStart(CheckArray));
-                    //    thread.Name = (i + 1).ToString();
-                    //    thread.Start();
-                    //}
                 }
                 else if (command == "help")
                 {
@@ -166,24 +169,6 @@ namespace Lib
 
                 Console.WriteLine();
                 command = Console.ReadLine();
-
-                //    case "thread":
-                //        Console.WriteLine("Введите число потоков (от 1 до 10)");
-
-                //        string InputNumber = Console.ReadLine();
-                //        int Number = Convert.ToInt32(InputNumber);
-                //        Index = 0;
-
-                //        for (int i = 0; i < Number; ++i)
-                //        {
-                //            var thread = new Thread(new ParameterizedThreadStart(CheckArray));
-                //            thread.Name = (i + 1).ToString();
-                //            thread.Start(Numbers);
-                //        }
-
-                //        break;
-
-
             }
         }
     }
