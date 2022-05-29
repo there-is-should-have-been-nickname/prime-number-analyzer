@@ -15,6 +15,8 @@ namespace Lib
         public static bool IsFinish = false;
         public static Mutex mutexObj = new();
         public static List<int> Numbers = new List<int>();
+        public static int AmountNumbers = 100;
+
 
         public readonly static string ReportStart = "Time test #";
         public readonly static string FailResult = "There is no prime number";
@@ -22,10 +24,15 @@ namespace Lib
 
         private static void ShowHelp()
         {
+            Console.ForegroundColor = ConsoleColor.Blue;
             Console.WriteLine("'help' для вызова помощи");
             Console.WriteLine("'sync m' для синхронного перебора, где m - кол-во тестов");
             Console.WriteLine("'thread n m' для многопоточного перебора, где n - кол-во потоков, m - кол-во тестов");
+            Console.WriteLine("'delete' для удаления всех созданных текстовых файлов");
+            Console.WriteLine("'clear' для очистки консоли");
             Console.WriteLine("'exit' для выхода");
+            Console.WriteLine("*В файлах по " + AmountNumbers + " чисел*");
+            Console.ResetColor();
         }
 
         private static List<int> GetParameters(string inputStr)
@@ -44,18 +51,44 @@ namespace Lib
             var TimeWatcher = new Stopwatch();
             for (int i = 0; i < number; ++i)
             {
+                Numbers = FileManager.ReadFile(AmountNumbers, i);
+
                 TimeWatcher.Start();
                 var PrimeNumber = Analyzer.FindFirstPrime(Numbers);
                 TimeWatcher.Stop();
 
-                Console.WriteLine((PrimeNumber == null) ? FailResult : SuccessResult + PrimeNumber);
-                Console.WriteLine(ReportStart + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
+                if (PrimeNumber == null)
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.WriteLine(FailResult);
+                } else
+                {
+                    Console.Write(SuccessResult);
+                    Console.ForegroundColor = ConsoleColor.Green;
+                    Console.WriteLine(PrimeNumber);
+                }
+                Console.ResetColor();
+
+                Console.Write(ReportStart + (i + 1) + ": ");
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine(TimeWatcher.ElapsedMilliseconds);
+                Console.ResetColor();
             }
         }
 
-        private static void FinishThread(string message)
+        private static void FinishThread(bool isSuccess, int SuccessNumber = -1)
         {
-            Console.WriteLine(message);
+            if (isSuccess)
+            {
+                Console.Write(SuccessResult);
+                Console.ForegroundColor = ConsoleColor.Green;
+                Console.WriteLine(SuccessNumber);
+            } else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.WriteLine(FailResult);
+            }
+            Console.ResetColor();
             mutexObj.ReleaseMutex();
             IsFinish = true;
         }
@@ -82,7 +115,7 @@ namespace Lib
                     var isPrime = Analyzer.IsPrime(Number);
                     if (isPrime)
                     {
-                        FinishThread(SuccessResult + Number);
+                        FinishThread(true, Number);
                         return;
                     }
                     ++Index;
@@ -90,7 +123,7 @@ namespace Lib
                 }
                 else
                 {
-                    FinishThread(FailResult);
+                    FinishThread(false);
                     return;
                 }
             }
@@ -103,9 +136,9 @@ namespace Lib
             {
                 Index = 0;
                 IsFinish = false;
+                Numbers = FileManager.ReadFile(AmountNumbers, i);
 
                 List<Thread> threads = new List<Thread>();
-
                 Stopwatch TimeWatcher = new Stopwatch();
 
                 for (int j = 0; j < threadNumber; j++)
@@ -127,14 +160,16 @@ namespace Lib
                     }
                 }
                 TimeWatcher.Stop();
-                Console.WriteLine(ReportStart + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
+
+                Console.Write(ReportStart + (i + 1) + ": ");
+                Console.ForegroundColor = ConsoleColor.DarkYellow;
+                Console.WriteLine(TimeWatcher.ElapsedMilliseconds);
+                Console.ResetColor();
             }
         }
 
         public static void Start()
         {
-
-            Numbers = FileManager.ReadFile("numbers1000.txt");
             ShowHelp();
             Console.WriteLine();
 
@@ -148,6 +183,7 @@ namespace Lib
                     var Params = GetParameters(command);
                     var TestNumber = Params[0];
 
+                    FileManager.CreateFiles(TestNumber, AmountNumbers);
                     ExactSyncTests(TestNumber);
                     
                 } else if (command.StartsWith("thread"))
@@ -156,8 +192,16 @@ namespace Lib
                     var ThreadNumber = Params[0];
                     var TestNumber = Params[1];
 
-                    
+                    FileManager.CreateFiles(TestNumber, AmountNumbers);
                     ExactMultithreadTests(ThreadNumber, TestNumber);
+                }
+                else if (command == "delete")
+                {
+                    FileManager.DeleteFiles();
+                }
+                else if (command == "clear")
+                {
+                    Console.Clear();
                 }
                 else if (command == "help")
                 {
