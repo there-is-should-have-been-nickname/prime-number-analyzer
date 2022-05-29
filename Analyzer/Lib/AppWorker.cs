@@ -55,7 +55,14 @@ namespace Lib
             }
         }
 
-        public static void CheckArray(object? obj)
+        private static void FinishThread(string message)
+        {
+            Console.WriteLine(message);
+            mutexObj.ReleaseMutex();
+            IsFinish = true;
+        }
+
+        private static void CheckArray(object? obj)
         {
             while (true)
             {
@@ -64,37 +71,54 @@ namespace Lib
                 if (IsFinish)
                 {
                     mutexObj.ReleaseMutex();
-
                     return;
                 }
 
                 if (Index < Numbers.Count)
                 {
-                    var thread = Thread.CurrentThread;
-                    Console.WriteLine("Current thread " + thread.Name);
-
+                    //var thread = Thread.CurrentThread;
+                    //Console.WriteLine("Current thread " + thread.Name);
                     var Number = Numbers[Index];
-                    Console.WriteLine("Number: " + Number);
+                    //Console.WriteLine("Number: " + Number);
 
                     var isPrime = Analyzer.IsPrime(Number);
                     if (isPrime)
                     {
-                        Console.WriteLine("\nThe first prime number is " + Number);
-                        mutexObj.ReleaseMutex();
-
+                        FinishThread("The first prime number is " + Number);
                         return;
                     }
                     ++Index;
                     mutexObj.ReleaseMutex();
-                } else
+                }
+                else
                 {
-                    Console.WriteLine("There is no prime number");
-                    mutexObj.ReleaseMutex();
-                    IsFinish = true;
+                    FinishThread("There is no prime number");
                     return;
                 }
             }
 
+        }
+
+        private static void ExactMultithreadTests(int threadNumber, int number)
+        {
+            var TimeWatcher = new Stopwatch();
+            for (int i = 0; i < number; ++i)
+            {
+                TimeWatcher.Start();
+
+                for (int j = 0; j < threadNumber; ++j)
+                {
+                    var thread = new Thread(new ParameterizedThreadStart(CheckArray));
+                    thread.Name = (j + 1).ToString();
+                    thread.Start();
+                }
+
+                
+                TimeWatcher.Stop();
+                
+
+                Console.WriteLine("Time test #" + (i + 1) + ": " + TimeWatcher.ElapsedMilliseconds);
+            }
         }
 
         public static void Start()
@@ -123,13 +147,14 @@ namespace Lib
                     var TestNumber = Params[1];
 
                     Index = 0;
-
-                    for (int i = 0; i < ThreadNumber; ++i)
-                    {
-                        var thread = new Thread(new ParameterizedThreadStart(CheckArray));
-                        thread.Name = (i + 1).ToString();
-                        thread.Start();
-                    }
+                    IsFinish = false;
+                    ExactMultithreadTests(ThreadNumber, TestNumber);
+                    //for (int i = 0; i < ThreadNumber; ++i)
+                    //{
+                    //    var thread = new Thread(new ParameterizedThreadStart(CheckArray));
+                    //    thread.Name = (i + 1).ToString();
+                    //    thread.Start();
+                    //}
                 }
                 else if (command == "help")
                 {
