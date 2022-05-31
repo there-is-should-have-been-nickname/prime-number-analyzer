@@ -1,5 +1,5 @@
 {
-  "AmountNumbers": 100,
+  "AmountNumbers": 10000000,
   "ReportStart": "Time test #",
   "FailResult": "There is no prime number",
   "SuccessResult": "The first prime number is ",

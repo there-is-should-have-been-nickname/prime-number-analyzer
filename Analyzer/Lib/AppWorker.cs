@@ -21,12 +21,19 @@ namespace Lib
         public static AppConfig Config = new AppConfig(0, "", "", "", 
             ConsoleColor.Black, ConsoleColor.Black, ConsoleColor.Black, ConsoleColor.Black);
 
+        private static void GetConfig()
+        {
+            string text = FileManager.ReadConfigFile(ConfigFileName);
+            Config = JsonSerializer.Deserialize<AppConfig>(text);
+
+        }
         private static void ShowHelp()
         {
             ConsoleManager.ChangeForegroundColor(Config.HelpColor);
             ConsoleManager.Print(new List<string>() { "'help' для вызова помощи" ,
                 "'sync m' для синхронного перебора, где m - кол-во тестов",
                 "'thread n m' для многопоточного перебора, где n - кол-во потоков, m - кол-во тестов",
+                "'parallel m' для параллельного перебора, где m - кол-во тестов",
                 "'delete' для удаления всех созданных текстовых файлов",
                 "'clear' для очистки консоли",
                 "'exit' для выхода",
@@ -46,6 +53,27 @@ namespace Lib
             return Result;
         }
 
+        private static void ProcessPrimeNumber(int? number, Stopwatch timeWatcher, int testNumber)
+        {
+            if (number == null)
+            {
+                ConsoleManager.PrintFail(Config.FailColor,
+                    Config.FailResult);
+            }
+            else
+            {
+                ConsoleManager.PrintSuccess(Config.SuccessColor,
+                    Config.SuccessResult,
+                    number.ToString());
+            }
+            ConsoleManager.ResetColor();
+
+            ConsoleManager.PrintReport(Config.ReportColor,
+                Config.ReportStart + testNumber + ": ",
+                timeWatcher.ElapsedMilliseconds.ToString());
+            ConsoleManager.ResetColor();
+        }
+
         private static void ExactSyncTests(int number)
         {
             var TimeWatcher = new Stopwatch();
@@ -57,41 +85,10 @@ namespace Lib
                 var PrimeNumber = Analyzer.FindFirstPrime(Numbers);
                 TimeWatcher.Stop();
 
-                if (PrimeNumber == null)
-                {
-                    ConsoleManager.PrintFail(Config.FailColor,
-                        Config.FailResult);
-                } else
-                {
-                    ConsoleManager.PrintSuccess(Config.SuccessColor, 
-                        Config.SuccessResult, 
-                        PrimeNumber.ToString());
-                }
-                ConsoleManager.ResetColor();
-
-                ConsoleManager.PrintReport(Config.ReportColor,
-                    Config.ReportStart + (i + 1) + ": ", 
-                    TimeWatcher.ElapsedMilliseconds.ToString());
-                ConsoleManager.ResetColor();
+                ProcessPrimeNumber(PrimeNumber, TimeWatcher, i + 1);
             }
         }
-
-        private static void FinishThread(bool isSuccess, int SuccessNumber = -1)
-        {
-            if (isSuccess)
-            {
-                ConsoleManager.PrintSuccess(Config.SuccessColor, 
-                    Config.SuccessResult, 
-                    SuccessNumber.ToString());
-            } else
-            {
-                ConsoleManager.PrintFail(Config.FailColor, 
-                    Config.FailResult);
-            }
-            ConsoleManager.ResetColor();
-            mutexObj.ReleaseMutex();
-            IsFinish = true;
-        }
+        
 
         private static void CheckArray(object? obj)
         {
@@ -128,6 +125,23 @@ namespace Lib
                 }
             }
 
+        }
+        private static void FinishThread(bool isSuccess, int SuccessNumber = -1)
+        {
+            if (isSuccess)
+            {
+                ConsoleManager.PrintSuccess(Config.SuccessColor,
+                    Config.SuccessResult,
+                    SuccessNumber.ToString());
+            }
+            else
+            {
+                ConsoleManager.PrintFail(Config.FailColor,
+                    Config.FailResult);
+            }
+            ConsoleManager.ResetColor();
+            mutexObj.ReleaseMutex();
+            IsFinish = true;
         }
 
         private static void ExactMultithreadTests(int threadNumber, int number)
@@ -168,13 +182,29 @@ namespace Lib
             }
         }
 
-        private static void GetConfig()
+
+        private static void ExactParallelTests(int number)
         {
-            string text = FileManager.ReadConfigFile(ConfigFileName);
-            Config = JsonSerializer.Deserialize<AppConfig>(text);
+            var TimeWatcher = new Stopwatch();
+            for (int i = 0; i < number; ++i)
+            {
+                Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
+                int? PrimeNumber = null;
 
+                TimeWatcher.Start();
+                Parallel.ForEach(Numbers, (number, state) =>
+                {
+                    if (Analyzer.IsPrime(number))
+                    {
+                        PrimeNumber = number;
+                        state.Break();
+                    }
+                });
+                TimeWatcher.Stop();
+
+                ProcessPrimeNumber(PrimeNumber, TimeWatcher, i + 1);
+            }
         }
-
         public static void Start()
         {
             GetConfig();
@@ -202,6 +232,15 @@ namespace Lib
 
                     FileManager.CreateFiles(TestNumber, Config.AmountNumbers);
                     ExactMultithreadTests(ThreadNumber, TestNumber);
+                }
+                else if (command.StartsWith("parallel"))
+                {
+                    var Params = GetParameters(command);
+                    var TestNumber = Params[0];
+
+                    FileManager.CreateFiles(TestNumber, Config.AmountNumbers);
+                    ExactParallelTests(TestNumber);
+
                 }
                 else if (command == "delete")
                 {
