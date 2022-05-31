@@ -1,8 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -15,28 +16,21 @@ namespace Lib
         public static bool IsFinish = false;
         public static Mutex mutexObj = new();
         public static List<int> Numbers = new List<int>();
-        public static int AmountNumbers = 100;
-        
 
-        public readonly static string ReportStart = "Time test #";
-        public readonly static string FailResult = "There is no prime number";
-        public readonly static string SuccessResult = "The first prime number is ";
-
-        public readonly static ConsoleColor ReportColor = ConsoleColor.DarkYellow;
-        public readonly static ConsoleColor FailColor = ConsoleColor.Red;
-        public readonly static ConsoleColor SuccessColor = ConsoleColor.Green;
-        public readonly static ConsoleColor HelpColor = ConsoleColor.Blue;
+        public static string ConfigFileName = "config";
+        public static AppConfig Config = new AppConfig(0, "", "", "", 
+            ConsoleColor.Black, ConsoleColor.Black, ConsoleColor.Black, ConsoleColor.Black);
 
         private static void ShowHelp()
         {
-            ConsoleManager.ChangeForegroundColor(HelpColor);
+            ConsoleManager.ChangeForegroundColor(Config.HelpColor);
             ConsoleManager.Print(new List<string>() { "'help' для вызова помощи" ,
                 "'sync m' для синхронного перебора, где m - кол-во тестов",
                 "'thread n m' для многопоточного перебора, где n - кол-во потоков, m - кол-во тестов",
                 "'delete' для удаления всех созданных текстовых файлов",
                 "'clear' для очистки консоли",
                 "'exit' для выхода",
-                "*В файлах по " + AmountNumbers + " чисел*"
+                "*В файлах по " + Config.AmountNumbers + " чисел*"
             });
             ConsoleManager.ResetColor();
         }
@@ -57,7 +51,7 @@ namespace Lib
             var TimeWatcher = new Stopwatch();
             for (int i = 0; i < number; ++i)
             {
-                Numbers = FileManager.ReadFile(AmountNumbers, i);
+                Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
 
                 TimeWatcher.Start();
                 var PrimeNumber = Analyzer.FindFirstPrime(Numbers);
@@ -65,15 +59,18 @@ namespace Lib
 
                 if (PrimeNumber == null)
                 {
-                    ConsoleManager.PrintFail(FailColor, FailResult);
+                    ConsoleManager.PrintFail(Config.FailColor,
+                        Config.FailResult);
                 } else
                 {
-                    ConsoleManager.PrintSuccess(SuccessColor, SuccessResult, PrimeNumber.ToString());
+                    ConsoleManager.PrintSuccess(Config.SuccessColor, 
+                        Config.SuccessResult, 
+                        PrimeNumber.ToString());
                 }
                 ConsoleManager.ResetColor();
 
-                ConsoleManager.PrintReport(ReportColor, 
-                    ReportStart + (i + 1) + ": ", 
+                ConsoleManager.PrintReport(Config.ReportColor,
+                    Config.ReportStart + (i + 1) + ": ", 
                     TimeWatcher.ElapsedMilliseconds.ToString());
                 ConsoleManager.ResetColor();
             }
@@ -83,10 +80,13 @@ namespace Lib
         {
             if (isSuccess)
             {
-                ConsoleManager.PrintSuccess(SuccessColor, SuccessResult, SuccessNumber.ToString());
+                ConsoleManager.PrintSuccess(Config.SuccessColor, 
+                    Config.SuccessResult, 
+                    SuccessNumber.ToString());
             } else
             {
-                ConsoleManager.PrintFail(FailColor, FailResult);
+                ConsoleManager.PrintFail(Config.FailColor, 
+                    Config.FailResult);
             }
             ConsoleManager.ResetColor();
             mutexObj.ReleaseMutex();
@@ -136,7 +136,7 @@ namespace Lib
             {
                 Index = 0;
                 IsFinish = false;
-                Numbers = FileManager.ReadFile(AmountNumbers, i);
+                Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
 
                 List<Thread> threads = new List<Thread>();
                 Stopwatch TimeWatcher = new Stopwatch();
@@ -161,15 +161,23 @@ namespace Lib
                 }
                 TimeWatcher.Stop();
 
-                ConsoleManager.PrintReport(ReportColor,
-                    ReportStart + (i + 1) + ": ",
+                ConsoleManager.PrintReport(Config.ReportColor,
+                    Config.ReportStart + (i + 1) + ": ",
                     TimeWatcher.ElapsedMilliseconds.ToString());
                 ConsoleManager.ResetColor();
             }
         }
 
+        private static void GetConfig()
+        {
+            string text = FileManager.ReadConfigFile(ConfigFileName);
+            Config = JsonSerializer.Deserialize<AppConfig>(text);
+
+        }
+
         public static void Start()
         {
+            GetConfig();
             ShowHelp();
             ConsoleManager.Print(new List<string>() { "" });
 
@@ -183,7 +191,7 @@ namespace Lib
                     var Params = GetParameters(command);
                     var TestNumber = Params[0];
 
-                    FileManager.CreateFiles(TestNumber, AmountNumbers);
+                    FileManager.CreateFiles(TestNumber, Config.AmountNumbers);
                     ExactSyncTests(TestNumber);
                     
                 } else if (command.StartsWith("thread"))
@@ -192,7 +200,7 @@ namespace Lib
                     var ThreadNumber = Params[0];
                     var TestNumber = Params[1];
 
-                    FileManager.CreateFiles(TestNumber, AmountNumbers);
+                    FileManager.CreateFiles(TestNumber, Config.AmountNumbers);
                     ExactMultithreadTests(ThreadNumber, TestNumber);
                 }
                 else if (command == "delete")

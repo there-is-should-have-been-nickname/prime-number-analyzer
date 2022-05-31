@@ -1,0 +1,10 @@
+{
+  "AmountNumbers": 100,
+  "ReportStart": "Time test #",
+  "FailResult": "There is no prime number",
+  "SuccessResult": "The first prime number is ",
+  "ReportColor": 6,
+  "FailColor": 12,
+  "SuccessColor": 10,
+  "HelpColor": 9
+}

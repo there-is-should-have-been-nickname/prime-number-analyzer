@@ -39,6 +39,30 @@ namespace Lib
                 Console.WriteLine(e.Message);
             }
         }
+
+        public static string ReadConfigFile(string name)
+        {
+            string result = "";
+            try
+            {
+                using (StreamReader sr = new(FILE_PATH + name + ".json"))
+                {
+                    string Line = sr.ReadLine();
+                    while (Line != null)
+                    {
+                        result += Line;
+                        Line = sr.ReadLine();
+                    }
+
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+
+            return result;
+        }
         public static List<int> ReadFile(int amountNumbers, int testNumber)
         {
             var Result = new List<int>();
