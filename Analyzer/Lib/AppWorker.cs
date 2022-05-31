@@ -16,23 +16,29 @@ namespace Lib
         public static Mutex mutexObj = new();
         public static List<int> Numbers = new List<int>();
         public static int AmountNumbers = 100;
-
+        
 
         public readonly static string ReportStart = "Time test #";
         public readonly static string FailResult = "There is no prime number";
         public readonly static string SuccessResult = "The first prime number is ";
 
+        public readonly static ConsoleColor ReportColor = ConsoleColor.DarkYellow;
+        public readonly static ConsoleColor FailColor = ConsoleColor.Red;
+        public readonly static ConsoleColor SuccessColor = ConsoleColor.Green;
+        public readonly static ConsoleColor HelpColor = ConsoleColor.Blue;
+
         private static void ShowHelp()
         {
-            Console.ForegroundColor = ConsoleColor.Blue;
-            Console.WriteLine("'help' для вызова помощи");
-            Console.WriteLine("'sync m' для синхронного перебора, где m - кол-во тестов");
-            Console.WriteLine("'thread n m' для многопоточного перебора, где n - кол-во потоков, m - кол-во тестов");
-            Console.WriteLine("'delete' для удаления всех созданных текстовых файлов");
-            Console.WriteLine("'clear' для очистки консоли");
-            Console.WriteLine("'exit' для выхода");
-            Console.WriteLine("*В файлах по " + AmountNumbers + " чисел*");
-            Console.ResetColor();
+            ConsoleManager.ChangeForegroundColor(HelpColor);
+            ConsoleManager.Print(new List<string>() { "'help' для вызова помощи" ,
+                "'sync m' для синхронного перебора, где m - кол-во тестов",
+                "'thread n m' для многопоточного перебора, где n - кол-во потоков, m - кол-во тестов",
+                "'delete' для удаления всех созданных текстовых файлов",
+                "'clear' для очистки консоли",
+                "'exit' для выхода",
+                "*В файлах по " + AmountNumbers + " чисел*"
+            });
+            ConsoleManager.ResetColor();
         }
 
         private static List<int> GetParameters(string inputStr)
@@ -59,20 +65,17 @@ namespace Lib
 
                 if (PrimeNumber == null)
                 {
-                    Console.ForegroundColor = ConsoleColor.Red;
-                    Console.WriteLine(FailResult);
+                    ConsoleManager.PrintFail(FailColor, FailResult);
                 } else
                 {
-                    Console.Write(SuccessResult);
-                    Console.ForegroundColor = ConsoleColor.Green;
-                    Console.WriteLine(PrimeNumber);
+                    ConsoleManager.PrintSuccess(SuccessColor, SuccessResult, PrimeNumber.ToString());
                 }
-                Console.ResetColor();
+                ConsoleManager.ResetColor();
 
-                Console.Write(ReportStart + (i + 1) + ": ");
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine(TimeWatcher.ElapsedMilliseconds);
-                Console.ResetColor();
+                ConsoleManager.PrintReport(ReportColor, 
+                    ReportStart + (i + 1) + ": ", 
+                    TimeWatcher.ElapsedMilliseconds.ToString());
+                ConsoleManager.ResetColor();
             }
         }
 
@@ -80,15 +83,12 @@ namespace Lib
         {
             if (isSuccess)
             {
-                Console.Write(SuccessResult);
-                Console.ForegroundColor = ConsoleColor.Green;
-                Console.WriteLine(SuccessNumber);
+                ConsoleManager.PrintSuccess(SuccessColor, SuccessResult, SuccessNumber.ToString());
             } else
             {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.WriteLine(FailResult);
+                ConsoleManager.PrintFail(FailColor, FailResult);
             }
-            Console.ResetColor();
+            ConsoleManager.ResetColor();
             mutexObj.ReleaseMutex();
             IsFinish = true;
         }
@@ -161,19 +161,19 @@ namespace Lib
                 }
                 TimeWatcher.Stop();
 
-                Console.Write(ReportStart + (i + 1) + ": ");
-                Console.ForegroundColor = ConsoleColor.DarkYellow;
-                Console.WriteLine(TimeWatcher.ElapsedMilliseconds);
-                Console.ResetColor();
+                ConsoleManager.PrintReport(ReportColor,
+                    ReportStart + (i + 1) + ": ",
+                    TimeWatcher.ElapsedMilliseconds.ToString());
+                ConsoleManager.ResetColor();
             }
         }
 
         public static void Start()
         {
             ShowHelp();
-            Console.WriteLine();
+            ConsoleManager.Print(new List<string>() { "" });
 
-            string command = Console.ReadLine();
+            string command = ConsoleManager.GetCommand();
 
             while (command != "exit")
             {    
@@ -201,18 +201,18 @@ namespace Lib
                 }
                 else if (command == "clear")
                 {
-                    Console.Clear();
+                    ConsoleManager.Clear();
                 }
                 else if (command == "help")
                 {
                     ShowHelp();
                 } else 
                 {
-                    Console.WriteLine("Unknown command");
+                    ConsoleManager.Print(new List<string>() { "Unknown command" });
                 }
 
-                Console.WriteLine();
-                command = Console.ReadLine();
+                ConsoleManager.Print(new List<string>() { "" });
+                command = ConsoleManager.GetCommand();
             }
         }
     }
