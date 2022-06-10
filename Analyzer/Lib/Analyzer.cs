@@ -8,24 +8,24 @@ namespace Lib
 {
     static class Analyzer
     {
-        public static bool IsPrime(int number)
+        public static bool IsNotPrime(int number)
         {
             for (int i = 2; i <= Math.Sqrt(number); ++i)
             {
                 if (number % i == 0)
                 {
-                    return false;
+                    return true;
                 }
             }
 
-            return true;
+            return false;
         }
 
-        public static int? FindFirstPrime(List<int> Numbers)
+        public static int? FindFirstNotPrime(List<int> Numbers)
         {
             foreach (var Num in Numbers)
             {
-                if (IsPrime(Num))
+                if (IsNotPrime(Num))
                 {
                     return Num;
                 }

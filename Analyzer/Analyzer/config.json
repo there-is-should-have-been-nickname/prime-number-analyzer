@@ -1,8 +1,8 @@
 {
-  "AmountNumbers": 10000000,
+  "AmountNumbers": 1000000,
   "ReportStart": "Time test #",
-  "FailResult": "There is no prime number",
-  "SuccessResult": "The first prime number is ",
+  "FailResult": "There is no not prime number",
+  "SuccessResult": "The first not prime number is ",
   "ReportColor": 6,
   "FailColor": 12,
   "SuccessColor": 10,

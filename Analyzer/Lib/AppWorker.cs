@@ -16,6 +16,8 @@ namespace Lib
         public static bool IsFinish = false;
         public static Mutex mutexObj = new();
         public static List<int> Numbers = new List<int>();
+        public static List<List<int>> Lists = new List<List<int>>();
+        public static List<Thread> Threads = new List<Thread>();
 
         public static string ConfigFileName = "config";
         public static AppConfig Config = new AppConfig(0, "", "", "", 
@@ -53,7 +55,7 @@ namespace Lib
             return Result;
         }
 
-        private static void ProcessPrimeNumber(int? number, Stopwatch timeWatcher, int testNumber)
+        private static void ProcessNotPrimeNumber(int? number, Stopwatch timeWatcher, int testNumber)
         {
             if (number == null)
             {
@@ -74,99 +76,225 @@ namespace Lib
             ConsoleManager.ResetColor();
         }
 
+        private static void ProcessNotPrimeNumber(int? number, int testNumber)
+        {
+            if (number == null)
+            {
+                ConsoleManager.PrintFail(Config.FailColor,
+                    Config.FailResult);
+            }
+            else
+            {
+                ConsoleManager.PrintSuccess(Config.SuccessColor,
+                    Config.SuccessResult,
+                    number.ToString());
+            }
+            ConsoleManager.ResetColor();
+        }
+
         private static void ExactSyncTests(int number)
         {
+            double SumTime = 0;
             var TimeWatcher = new Stopwatch();
             for (int i = 0; i < number; ++i)
             {
                 Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
 
+                TimeWatcher.Reset();
                 TimeWatcher.Start();
-                var PrimeNumber = Analyzer.FindFirstPrime(Numbers);
+                var NotPrimeNumber = Analyzer.FindFirstNotPrime(Numbers);
                 TimeWatcher.Stop();
+                SumTime += TimeWatcher.ElapsedMilliseconds;
 
-                ProcessPrimeNumber(PrimeNumber, TimeWatcher, i + 1);
+                ProcessNotPrimeNumber(NotPrimeNumber, TimeWatcher, i + 1);
             }
+            ConsoleManager.Print(new List<string>() { (SumTime / number).ToString() });
         }
         
 
+        //private static void CheckArray(object? obj)
+        //{
+        //    while (true)
+        //    {
+        //        mutexObj.WaitOne();
+
+        //        if (IsFinish)
+        //        {
+        //            mutexObj.ReleaseMutex();
+        //            return;
+        //        }
+
+        //        if (Index < Numbers.Count)
+        //        {
+        //            //var thread = Thread.CurrentThread;
+        //            //Console.WriteLine("Current thread " + thread.Name);
+        //            var Number = Numbers[Index];
+        //            //Console.WriteLine("Number: " + Number);
+
+        //            var isNotPrime = Analyzer.IsNotPrime(Number);
+        //            if (isNotPrime)
+        //            {
+        //                FinishThread(true, Number);
+        //                return;
+        //            }
+        //            ++Index;
+        //            mutexObj.ReleaseMutex();
+        //        }
+        //        else
+        //        {
+        //            FinishThread(false);
+        //            return;
+        //        }
+        //    }
+        //}
+
         private static void CheckArray(object? obj)
         {
-            while (true)
+            int ListInd = (int)obj;
+            var NotPrimeNumber = Analyzer.FindFirstNotPrime(Lists[ListInd]);
+            //ProcessNotPrimeNumber(NotPrimeNumber, ListInd);
+
+            if (NotPrimeNumber != null)
             {
-                mutexObj.WaitOne();
-
-                if (IsFinish)
-                {
-                    mutexObj.ReleaseMutex();
-                    return;
-                }
-
-                if (Index < Numbers.Count)
-                {
-                    //var thread = Thread.CurrentThread;
-                    //Console.WriteLine("Current thread " + thread.Name);
-                    var Number = Numbers[Index];
-                    //Console.WriteLine("Number: " + Number);
-
-                    var isPrime = Analyzer.IsPrime(Number);
-                    if (isPrime)
-                    {
-                        FinishThread(true, Number);
-                        return;
-                    }
-                    ++Index;
-                    mutexObj.ReleaseMutex();
-                }
-                else
-                {
-                    FinishThread(false);
-                    return;
-                }
+                FinishThreads(Threads);
             }
 
         }
-        private static void FinishThread(bool isSuccess, int SuccessNumber = -1)
+        //private static void FinishThread(bool isSuccess, int SuccessNumber = -1)
+        //{
+        //    if (isSuccess)
+        //    {
+        //        ConsoleManager.PrintSuccess(Config.SuccessColor,
+        //            Config.SuccessResult,
+        //            SuccessNumber.ToString());
+        //    }
+        //    else
+        //    {
+        //        ConsoleManager.PrintFail(Config.FailColor,
+        //            Config.FailResult);
+        //    }
+        //    ConsoleManager.ResetColor();
+        //    mutexObj.ReleaseMutex();
+        //    IsFinish = true;
+        //}
+
+        private static void FinishThreads(List<Thread> threads)
         {
-            if (isSuccess)
+            foreach(var thread in threads)
             {
-                ConsoleManager.PrintSuccess(Config.SuccessColor,
-                    Config.SuccessResult,
-                    SuccessNumber.ToString());
+                thread.Interrupt();
             }
-            else
+        }
+
+        //private static void ExactMultithreadTests(int threadNumber, int number)
+        //{
+        //    double SumTime = 0;
+        //    for (int i = 0; i < number; ++i)
+        //    {
+        //        Index = 0;
+        //        IsFinish = false;
+        //        Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
+
+        //        Stopwatch TimeWatcher = new Stopwatch();
+        //        TimeWatcher.Reset();
+        //        TimeWatcher.Start();
+
+        //        List<Thread> threads = new List<Thread>();
+
+
+        //        for (int j = 0; j < threadNumber; j++)
+        //        {
+        //            var thread = new Thread(new ParameterizedThreadStart(CheckArray));
+        //            thread.Name = (j + 1).ToString();
+        //            threads.Add(thread);
+
+        //        }
+
+        //        threads.ForEach(T => T.Start());
+
+        //        foreach (Thread thread in threads)
+        //        {
+        //            if (thread.IsAlive)
+        //            {
+        //                thread.Join();
+        //            }
+        //        }
+        //        TimeWatcher.Stop();
+
+        //        SumTime += TimeWatcher.ElapsedMilliseconds;
+        //        ConsoleManager.PrintReport(Config.ReportColor,
+        //            Config.ReportStart + (i + 1) + ": ",
+        //            TimeWatcher.ElapsedMilliseconds.ToString());
+        //        ConsoleManager.ResetColor();
+        //    }
+        //    ConsoleManager.Print(new List<string>() { (SumTime / number).ToString() });
+        //}
+
+        private static List<List<int>> GetListOfLists(int listNumber, List<int> numbers)
+        {
+            var result = new List<List<int>>();
+            var numberInOneList = numbers.Count / listNumber;
+            var currentNumbersInList = 0;
+            var currentList = new List<int>();
+            var ind = 0;
+
+            while (ind < numbers.Count)
             {
-                ConsoleManager.PrintFail(Config.FailColor,
-                    Config.FailResult);
+                if (currentNumbersInList < numberInOneList)
+                {
+                    currentList.Add(numbers[ind]);
+                    ++currentNumbersInList;
+                    ++ind;
+                } else
+                {
+                    result.Add(currentList);
+                    currentList = new List<int>();
+                    currentNumbersInList = 0;
+                }
             }
-            ConsoleManager.ResetColor();
-            mutexObj.ReleaseMutex();
-            IsFinish = true;
+            if (currentNumbersInList != 0 && numbers.Count % listNumber != 0)
+            {
+                foreach (var elem in currentList)
+                {
+                    result[result.Count - 1].Add(elem);
+                }
+            }
+            if (currentNumbersInList != 0 && numbers.Count % listNumber == 0)
+            {
+                result.Add(currentList);
+            }
+
+            return result;
         }
 
         private static void ExactMultithreadTests(int threadNumber, int number)
         {
+            double SumTime = 0;
+            
             for (int i = 0; i < number; ++i)
             {
                 Index = 0;
                 IsFinish = false;
                 Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
 
-                List<Thread> threads = new List<Thread>();
+                Lists = GetListOfLists(threadNumber, Numbers);
+
                 Stopwatch TimeWatcher = new Stopwatch();
+                TimeWatcher.Reset();
+                TimeWatcher.Start();
+
+                Threads = new List<Thread>();
 
                 for (int j = 0; j < threadNumber; j++)
                 {
                     var thread = new Thread(new ParameterizedThreadStart(CheckArray));
                     thread.Name = (j + 1).ToString();
-                    threads.Add(thread);
+                    Threads.Add(thread);
+                    thread.Start(j);
 
                 }
 
-                TimeWatcher.Start();
-                threads.ForEach(T => T.Start());
-
-                foreach (Thread thread in threads)
+                foreach (Thread thread in Threads)
                 {
                     if (thread.IsAlive)
                     {
@@ -175,35 +303,39 @@ namespace Lib
                 }
                 TimeWatcher.Stop();
 
+                SumTime += TimeWatcher.ElapsedMilliseconds;
                 ConsoleManager.PrintReport(Config.ReportColor,
                     Config.ReportStart + (i + 1) + ": ",
                     TimeWatcher.ElapsedMilliseconds.ToString());
                 ConsoleManager.ResetColor();
             }
+            ConsoleManager.Print(new List<string>() { (SumTime / number).ToString() });
         }
-
 
         private static void ExactParallelTests(int number)
         {
             var TimeWatcher = new Stopwatch();
+            double SumTime = 0;
             for (int i = 0; i < number; ++i)
             {
                 Numbers = FileManager.ReadFile(Config.AmountNumbers, i);
-                int? PrimeNumber = null;
-
+                int? NotPrimeNumber = null;
+                TimeWatcher.Reset();
                 TimeWatcher.Start();
                 Parallel.ForEach(Numbers, (number, state) =>
                 {
-                    if (Analyzer.IsPrime(number))
+                    if (Analyzer.IsNotPrime(number))
                     {
-                        PrimeNumber = number;
+                        NotPrimeNumber = number;
                         state.Break();
                     }
                 });
                 TimeWatcher.Stop();
+                SumTime += TimeWatcher.ElapsedMilliseconds;
 
-                ProcessPrimeNumber(PrimeNumber, TimeWatcher, i + 1);
+                ProcessNotPrimeNumber(NotPrimeNumber, TimeWatcher, i + 1);
             }
+            ConsoleManager.Print(new List<string>() { (SumTime / number).ToString() });
         }
         public static void Start()
         {
@@ -215,7 +347,6 @@ namespace Lib
 
             while (command != "exit")
             {    
-                
                 if (command.StartsWith("sync"))
                 {
                     var Params = GetParameters(command);
@@ -240,7 +371,6 @@ namespace Lib
 
                     FileManager.CreateFiles(TestNumber, Config.AmountNumbers);
                     ExactParallelTests(TestNumber);
-
                 }
                 else if (command == "delete")
                 {

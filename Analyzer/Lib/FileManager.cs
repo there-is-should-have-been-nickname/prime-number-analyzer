@@ -11,7 +11,8 @@ namespace Lib
     {
         public readonly static string FILE_PATH = "C:\\Users\\ACER\\Desktop\\Projects\\prime-number-analyzer\\Analyzer\\Analyzer\\";
         public readonly static string DEFAULT_NAME = "numbers";
-        public readonly static int MAX_VALUE = 10000;
+        public readonly static int MIN_VALUE = 100000;
+        public readonly static int MAX_VALUE = 1000000000;
 
         private static void CreateFile(string path, int amountNumbers)
         {
@@ -22,7 +23,9 @@ namespace Lib
                 {
                     for (int j = 0; j < amountNumbers; ++j)
                     {
-                        int RandNumber = rand.Next(1, MAX_VALUE);
+                        //int RandNumber = 115001;
+                        int RandNumber = 115001;
+                        //int RandNumber = rand.Next(1, 10);
                         if (j == amountNumbers - 1)
                         {
                             sw.Write(RandNumber);
